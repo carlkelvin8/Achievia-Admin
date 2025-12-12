@@ -14,25 +14,55 @@
     <!-- Main Content -->
     <div class="flex-1 p-8 flex justify-center items-start">
       <div class="w-full max-w-3xl p-8 rounded-xl bg-white shadow">
-
         <h1 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-3">Edit Quiz</h1>
+
         @if (session('success'))
           <div class="mb-4 text-green-700 bg-green-100 border border-green-300 p-3 rounded-lg text-sm">
             {{ session('success') }}
           </div>
         @endif
 
+        @if ($errors->any())
+          <div class="mb-4 text-red-700 bg-red-100 border border-red-300 p-3 rounded-lg text-sm">
+            <ul class="list-disc ml-6">
+              @foreach ($errors->all() as $message)
+                <li>{{ $message }}</li>
+              @endforeach
+            </ul>
+          </div>
+        @endif
+
         <form action="{{ route('quizzes.update', $quiz->id) }}" method="POST" class="space-y-6">
           @csrf
           @method('PUT')
-          
+
+          <!-- Subject (REQUIRED) -->
           <div>
-            <label for="module_id" class="block text-sm font-semibold text-gray-700 mb-1">Select Module</label>
+            <label for="subject_id" class="block text-sm font-semibold text-gray-700 mb-1">Subject</label>
+            <select name="subject_id" id="subject_id"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none bg-white text-gray-700"
+                    required>
+              @foreach ($subjects as $subject)
+                <option value="{{ $subject->id }}"
+                  {{ (int)old('subject_id', $quiz->subject_id) === (int)$subject->id ? 'selected' : '' }}>
+                  {{ $subject->title }}
+                </option>
+              @endforeach
+            </select>
+            @error('subject_id')
+              <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          <!-- Module (optional) -->
+          <div>
+            <label for="module_id" class="block text-sm font-semibold text-gray-700 mb-1">Select Module (optional)</label>
             <select name="module_id" id="module_id"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none bg-white text-gray-700">
-              <option value="">-- Choose a module --</option>
+              <option value="">-- None --</option>
               @foreach ($modules as $module)
-                <option value="{{ $module->id }}" {{ $quiz->module_id == $module->id ? 'selected' : '' }}>
+                <option value="{{ $module->id }}"
+                  {{ (int)old('module_id', $quiz->module_id) === (int)$module->id ? 'selected' : '' }}>
                   {{ $module->title }}
                 </option>
               @endforeach
@@ -45,9 +75,15 @@
           <!-- Quiz Title -->
           <div>
             <label for="title" class="block text-sm font-semibold text-gray-700 mb-1">Quiz Title</label>
-            <input type="text" id="title" name="title" value="{{ old('title', $quiz->title) }}"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none"
-                   placeholder="Enter quiz title">
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value="{{ old('title', $quiz->title) }}"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none"
+              placeholder="Enter quiz title"
+              required
+            >
             @error('title')
               <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
             @enderror
@@ -56,9 +92,13 @@
           <!-- Description -->
           <div>
             <label for="description" class="block text-sm font-semibold text-gray-700 mb-1">Description (optional)</label>
-            <textarea id="description" name="description" rows="4"
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none"
-                      placeholder="Enter quiz description">{{ old('description', $quiz->description) }}</textarea>
+            <textarea
+              id="description"
+              name="description"
+              rows="4"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none"
+              placeholder="Enter quiz description"
+            >{{ old('description', $quiz->description) }}</textarea>
             @error('description')
               <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
             @enderror

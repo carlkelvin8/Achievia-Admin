@@ -1,30 +1,35 @@
 <?php
 
-// app/Models/Quiz.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Quiz extends Model
 {
-    protected $fillable = ['subject_id', 'title', 'description'];
+    protected $table = 'quizzes';
+    public $timestamps = false; // no updated_at in DB; created_at is defaulted by DB
 
-    public $timestamps = false;
-    public function module()
+    protected $fillable = [
+        'title',
+        'description',
+        'subject_id',
+        'module_id', // now present in DB
+    ];
+
+    public function subject(): BelongsTo
     {
-        return $this->belongsTo(Module::class);
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 
-    // Quiz.php
-public function subject()
-{
-    return $this->belongsTo(Subject::class);
-}
-
-
-    public function questions()
+    public function module(): BelongsTo
     {
-        return $this->hasMany(Question::class);
+        return $this->belongsTo(Module::class, 'module_id');
     }
 
+    public function questions(): HasMany
+    {
+        return $this->hasMany(Question::class, 'quiz_id');
+    }
 }

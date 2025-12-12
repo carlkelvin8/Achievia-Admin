@@ -5,175 +5,336 @@ namespace App\Http\Controllers;
 use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Choice;
-use App\Models\Module;
 use App\Models\Subject;
 use Illuminate\Http\Request;
+use App\Models\Module;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class QuizController extends Controller
 {
-    public function index(Request $request)
+    /* ---------- Utilities ---------- */
+
+    protected function cleanRte(?string $html): ?string
     {
-        $subjectId = $request->get('subject_id');
-        $search = $request->get('search'); // search input
-    
-        $quizzes = Quiz::with('subject')
-            ->withCount('questions')
-            ->when($subjectId, function ($query) use ($subjectId) {
-                $query->where('subject_id', $subjectId);
-            })
-            ->when($search, function ($query) use ($search) {
-                // search inside related questions
-                $query->whereHas('questions', function ($q) use ($search) {
-                    $q->where('question_text', 'LIKE', "%{$search}%");
-                });
-            })
-            ->latest()
-            ->get();
-    
-        $subjects = Subject::all();
-    
-        // ✅ total number of questions across filtered quizzes
-        $totalQuestions = $quizzes->sum('questions_count');
-    
-        return view('admin.quiz', compact('quizzes', 'subjects', 'subjectId', 'search', 'totalQuestions'));
+        if ($html === null) return null;
+        $html = trim($html);
+        return $html; // plug purifier here if needed
     }
-    
-    
-public function create()
+
+    protected function rteIsEmpty(?string $html): bool
+    {
+        $plain = trim(strip_tags((string)$html));
+        return $plain === '';
+    }
+
+    /* ---------- Screens ---------- */
+
+   // app/Http/Controllers/QuizController.php
+
+public function index(Request $request)
 {
-    $subjects = Subject::all(); // <-- load subjects instead of modules
-    return view('admin.quiz_create', compact('subjects'));
+    // optional filters; safe even if you don't use them in the view yet
+    $query = \App\Models\Quiz::withCount('questions')->latest();
+
+    if ($request->filled('subject_id')) {
+        $query->where('subject_id', $request->input('subject_id'));
+    }
+
+    if ($request->filled('search')) {
+        $term = $request->input('search');
+        $query->where(function ($q) use ($term) {
+            $q->where('title', 'like', "%{$term}%")
+              ->orWhere('description', 'like', "%{$term}%")
+              ->orWhereHas('questions', function ($qq) use ($term) {
+                  $qq->where('question_text', 'like', "%{$term}%");
+              });
+        });
+    }
+
+    $rows      = $query->paginate(15);
+    $subjects  = \App\Models\Subject::select('id','title')->orderBy('title')->get();
+
+    return view('admin.quiz', [
+        'rows'            => $rows,
+        'quizzes'         => $rows,
+        'subjects'        => $subjects,            // <-- pass this
+        'totalQuestions'  => $rows->getCollection()->sum('questions_count'),
+    ]);
 }
+
+    public function create()
+    {
+        $subjects = Subject::select('id','title')->orderBy('title')->get();
+        return view('admin.quiz_create', compact('subjects'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'subject_id' => 'required|exists:subjects,id',
-            'title' => 'required|string',
+            'subject_id'  => 'required|exists:subjects,id',
+            'module_id'   => 'nullable|exists:modules,id',   // <-- add
+            'title'       => 'required|string',
+            'description' => 'nullable|string',
+        ]);
+    
+        $validated['description'] = $validated['description']
+            ? $this->cleanRte($validated['description'])
+            : null;
+    
+        $quiz = Quiz::create($validated);
+        return redirect()->route('quizzes.questions', $quiz);
+    }
+
+    public function show(Quiz $quiz)
+    {
+        $quiz->load('questions.choices');
+        return view('admin.quiz_show', compact('quiz'));
+    }
+
+    public function edit(Quiz $quiz)
+    {
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
+        $modules  = Module::select('id', 'title')->orderBy('title')->get();
+
+        return view('admin.quiz_edit', compact('quiz', 'subjects', 'modules'));
+    }
+
+    public function update(Request $request, Quiz $quiz)
+    {
+        $validated = $request->validate([
+            'subject_id'  => 'required|exists:subjects,id',
+            'module_id'   => 'nullable|exists:modules,id',
+            'title'       => 'required|string',
             'description' => 'nullable|string',
         ]);
 
-        $quiz = Quiz::create($validated);
+        $validated['description'] = $validated['description']
+            ? $this->cleanRte($validated['description'])
+            : null;
 
-        return redirect()->route('quizzes.questions', $quiz->id);
+        $quiz->update($validated);
+
+        return redirect()->route('quizzes.index')->with('success', 'Quiz updated successfully!');
     }
 
-
-    public function questions($quizId)
+  
+    public function questions(Quiz $quiz)
     {
-        $quiz = Quiz::with('questions.choices')->findOrFail($quizId);
+        $quiz->load('questions.choices');
         return view('admin.questions', compact('quiz'));
     }
 
-    public function addQuestion(Request $request, $quizId)
+    public function editQuestion(Quiz $quiz, Question $question)
     {
-        $request->validate([
-            'question_text' => 'required|string',
-            'question_type' => 'required|string|in:multiple_choice,true_false,short_answer',
-            'choices' => 'required|array|min:1',
-            'choices.*.text' => 'nullable|string',
-            'choices.*.image' => 'nullable|image|max:2048',
-            'correct' => 'nullable|array',
-            'correct.*' => 'integer',
-            'correct_description' => 'nullable|string',
-            'question_image' => 'nullable|image|max:2048',
-            'notes' => 'nullable|string'
-        ]);
-
-        $imagePath = $request->hasFile('question_image') 
-            ? $request->file('question_image')->store('questions', 'public') 
-            : null;
-
-        $question = Question::create([
-            'quiz_id' => $quizId,
-            'question_text' => $request->question_text,
-            'question_type' => $request->question_type,
-            'image_path' => $imagePath,
-            'correct_description' => $request->correct_description,
-            'notes' => $request->notes,
-        ]);
-
-        foreach ($request->choices as $index => $choiceData) {
-            if (empty($choiceData['text']) && empty($choiceData['image'])) continue;
-
-            $choiceImagePath = isset($choiceData['image']) && $choiceData['image'] instanceof \Illuminate\Http\UploadedFile
-                ? $choiceData['image']->store('choices', 'public')
-                : null;
-
-            Choice::create([
-                'question_id' => $question->id,
-                'choice_text' => $choiceData['text'] ?? null,
-                'image' => $choiceImagePath,
-                'is_correct' => in_array($index, $request->correct ?? []) ? 1 : 0,
-            ]);
-        }
-
-        return back()->with('success', 'Question added!');
+        if ($question->quiz_id !== $quiz->id) abort(404);
+        return response()->json($question->load('choices'));
     }
 
-    public function updateQuestion(Request $request, $quizId, $questionId)
+    /* ---------- Actions ---------- */
+    public function addQuestion(Request $request, Quiz $quiz)
     {
-        $request->validate([
-            'question_text' => 'required|string',
-            'question_type' => 'required|string|in:multiple_choice,true_false,short_answer',
-            'choices' => 'required|array|min:1',
-            'choices.*.id' => 'nullable|integer|exists:choices,id',
-            'choices.*.text' => 'nullable|string',
-            'choices.*.image' => 'nullable|image|max:2048',
-            'correct' => 'nullable|array',
-            'correct.*' => 'integer',
-            'correct_description' => 'nullable|string',
-            'question_image' => 'nullable|image|max:2048',
-            'notes' => 'nullable|string',
+        $data = $request->validate([
+            'question_text'        => 'required|string',
+            'question_type'        => 'required|string|in:multiple_choice,true_false,short_answer',
+            'choices'              => 'required|array|min:1',
+            'choices.*.text'       => 'nullable|string',
+            'choices.*.image'      => 'nullable|image|max:2048',
+            'correct_index'        => 'nullable|integer',
+            'correct_description'  => 'nullable|string',
+            'question_image'       => 'nullable|image|max:2048',
+            'notes'                => 'nullable|string',
         ]);
 
-        $question = Question::where('quiz_id', $quizId)->findOrFail($questionId);
-
-        // Update question image if uploaded
-        if ($request->hasFile('question_image')) {
-            if ($question->image_path && \Storage::disk('public')->exists($question->image_path)) {
-                \Storage::disk('public')->delete($question->image_path);
-            }
-            $question->image_path = $request->file('question_image')->store('questions', 'public');
+        if ($this->rteIsEmpty($data['question_text'] ?? '')) {
+            return back()->withErrors(['question_text' => 'Question text is required.'])->withInput();
         }
 
-        $question->update([
-            'question_text' => $request->question_text,
-            'question_type' => $request->question_type,
-            'correct_description' => $request->correct_description,
-            'image_path' => $question->image_path,
-            'notes' => $request->notes,
-        ]);
+        // Ensure at least one non-empty choice (text or image)
+        $hasAnyChoice = false;
+        foreach ($data['choices'] as $c) {
+            $txt = $c['text'] ?? null;
+            $img = $c['image'] ?? null;
+            if (!$this->rteIsEmpty($txt ?? '') || ($img instanceof \Illuminate\Http\UploadedFile)) {
+                $hasAnyChoice = true;
+                break;
+            }
+        }
+        if (!$hasAnyChoice) {
+            return back()->withErrors(['choices' => 'Add at least one non-empty choice (text or image).'])->withInput();
+        }
 
-        // Update or create choices
-        foreach ($request->choices as $index => $choiceData) {
-            $choice = isset($choiceData['id']) 
-                ? Choice::find($choiceData['id']) 
-                : new Choice(['question_id' => $question->id]);
+        // Sanitize correct_index to be within 0..(count-1) or null
+        $correctIndex = $data['correct_index'] ?? null;
+        $choiceCount  = count($data['choices']);
+        if (!is_null($correctIndex)) {
+            $correctIndex = (int)$correctIndex;
+            if ($correctIndex < 0 || $correctIndex >= $choiceCount) {
+                $correctIndex = null;
+            }
+        }
 
-            // Handle choice image upload
-            if (isset($choiceData['image']) && $choiceData['image'] instanceof \Illuminate\Http\UploadedFile) {
-                if ($choice->image && \Storage::disk('public')->exists($choice->image)) {
-                    \Storage::disk('public')->delete($choice->image);
+        try {
+            return DB::transaction(function () use ($request, $data, $quiz, $correctIndex) {
+                $imagePath = $request->hasFile('question_image')
+                    ? $request->file('question_image')->store('questions', 'public')
+                    : null;
+
+                $question = Question::create([
+                    'quiz_id'             => $quiz->id,
+                    'question_text'       => $this->cleanRte($data['question_text']),
+                    'question_type'       => $data['question_type'],
+                    'image_path'          => $imagePath,
+                    'correct_description' => isset($data['correct_description']) ? $this->cleanRte($data['correct_description']) : null,
+                    'notes'               => isset($data['notes']) ? $this->cleanRte($data['notes']) : null,
+                ]);
+
+                foreach ($data['choices'] as $index => $choiceData) {
+                    $txtHtml = $choiceData['text'] ?? null;
+                    $imgFile = $choiceData['image'] ?? null;
+                    $isTxtEmpty = $this->rteIsEmpty($txtHtml ?? '');
+
+                    if ($isTxtEmpty && !($imgFile instanceof \Illuminate\Http\UploadedFile)) {
+                        continue;
+                    }
+
+                    $choiceImagePath = ($imgFile instanceof \Illuminate\Http\UploadedFile)
+                        ? $imgFile->store('choices', 'public')
+                        : null;
+
+                    Choice::create([
+                        'question_id' => $question->id,
+                        'choice_text' => $isTxtEmpty ? '' : $this->cleanRte($txtHtml),
+                        'image'       => $choiceImagePath,
+                        'is_correct'  => (!is_null($correctIndex) && $index === (int)$correctIndex) ? 1 : 0,
+                    ]);
                 }
-                $choice->image = $choiceData['image']->store('choices', 'public');
-            }
 
-            $choice->choice_text = $choiceData['text'] ?? null;
-            $choice->is_correct = in_array($index, $request->correct ?? []) ? 1 : 0; // ✅ fixed
-            $choice->question_id = $question->id;
-            $choice->save();
+                return redirect()->route('quizzes.questions', $quiz)->with('success', 'Question added!');
+            });
+        } catch (\Throwable $e) {
+            \Log::error('AddQuestion failed', ['quiz_id' => $quiz->id, 'msg' => $e->getMessage()]);
+            return back()->withInput()->with('error', 'Save failed: '.$e->getMessage());
         }
-
-        return back()->with('success', 'Question updated successfully!');
     }
 
-    public function destroy($quizId, $questionId)
+    public function updateQuestion(Request $request, Quiz $quiz, Question $question)
     {
-        $question = Question::where('quiz_id', $quizId)->findOrFail($questionId);
+        if ($question->quiz_id !== $quiz->id) abort(404);
 
-        if ($question->image_path && \Storage::disk('public')->exists($question->image_path)) {
-            \Storage::disk('public')->delete($question->image_path);
+        $data = $request->validate([
+            'question_text'        => 'required|string',
+            'question_type'        => 'required|string|in:multiple_choice,true_false,short_answer',
+            'choices'              => 'required|array|min:1',
+            'choices.*.id'         => 'nullable|integer|exists:choices,id',
+            'choices.*.text'       => 'nullable|string',
+            'choices.*.image'      => 'nullable|image|max:2048',
+            'correct_index'        => 'nullable|integer',
+            'correct_description'  => 'nullable|string',
+            'question_image'       => 'nullable|image|max:2048',
+            'notes'                => 'nullable|string',
+        ]);
+
+        if ($this->rteIsEmpty($data['question_text'] ?? '')) {
+            return back()->withErrors(['question_text' => 'Question text is required.'])->withInput();
         }
+
+        // Normalize correct index
+        $correctIndex = $data['correct_index'] ?? null;
+        if (!is_null($correctIndex)) $correctIndex = (int)$correctIndex;
+
+        try {
+            return DB::transaction(function () use ($request, $data, $question, $quiz, $correctIndex) {
+
+                if ($request->hasFile('question_image')) {
+                    if ($question->image_path && Storage::disk('public')->exists($question->image_path)) {
+                        Storage::disk('public')->delete($question->image_path);
+                    }
+                    $question->image_path = $request->file('question_image')->store('questions', 'public');
+                }
+
+                $question->update([
+                    'question_text'       => $this->cleanRte($data['question_text']),
+                    'question_type'       => $data['question_type'],
+                    'correct_description' => isset($data['correct_description']) ? $this->cleanRte($data['correct_description']) : null,
+                    'image_path'          => $question->image_path,
+                    'notes'               => isset($data['notes']) ? $this->cleanRte($data['notes']) : null,
+                ]);
+
+                $submittedIds = [];
+                $touchedRows  = 0;
+
+                foreach ($data['choices'] as $index => $choiceData) {
+                    $choice = !empty($choiceData['id'])
+                        ? Choice::where('question_id', $question->id)->find($choiceData['id'])
+                        : null;
+
+                    $txtHtml    = $choiceData['text'] ?? null;
+                    $imgFile    = $choiceData['image'] ?? null;
+                    $isTxtEmpty = $this->rteIsEmpty($txtHtml ?? '');
+
+                    // brand-new & empty -> skip
+                    if (!$choice && $isTxtEmpty && !($imgFile instanceof \Illuminate\Http\UploadedFile)) {
+                        continue;
+                    }
+
+                    if (!$choice) {
+                        $choice = new Choice(['question_id' => $question->id]);
+                    }
+
+                    if ($imgFile instanceof \Illuminate\Http\UploadedFile) {
+                        if ($choice->image && Storage::disk('public')->exists($choice->image)) {
+                            Storage::disk('public')->delete($choice->image);
+                        }
+                        $choice->image = $imgFile->store('choices', 'public');
+                    }
+
+                    $choice->choice_text = $isTxtEmpty ? '' : $this->cleanRte($txtHtml);
+                    $choice->is_correct  = (!is_null($correctIndex) && $index === (int)$correctIndex) ? 1 : 0;
+
+                    // if existed and became totally empty -> delete
+                    if ($choice->choice_text === '' && empty($choice->image) && !empty($choiceData['id'])) {
+                        $choice->delete();
+                        continue;
+                    }
+
+                    $choice->save();
+                    $submittedIds[] = $choice->id;
+                    $touchedRows++;
+                }
+
+                // remove not-resubmitted choices
+                $question->choices()->whereNotIn('id', $submittedIds)->delete();
+
+                if ($touchedRows === 0) {
+                    return back()->withErrors(['choices' => 'Provide at least one non-empty choice (text or image).'])->withInput();
+                }
+
+                return redirect()->route('quizzes.questions', $quiz)->with('success', 'Question updated successfully!');
+            });
+        } catch (\Throwable $e) {
+            \Log::error('UpdateQuestion failed', [
+                'quiz_id' => $quiz->id,
+                'question_id' => $question->id,
+                'msg' => $e->getMessage()
+            ]);
+            return back()->withInput()->with('error', 'Update failed: '.$e->getMessage());
+        }
+    }
+
+    public function destroy(Quiz $quiz, Question $question)
+    {
+        if ($question->quiz_id !== $quiz->id) abort(404);
+
+        if ($question->image_path && Storage::disk('public')->exists($question->image_path)) {
+            Storage::disk('public')->delete($question->image_path);
+        }
+
+        $question->choices()->each(function ($c) {
+            if ($c->image && Storage::disk('public')->exists($c->image)) {
+                Storage::disk('public')->delete($c->image);
+            }
+        });
 
         $question->choices()->delete();
         $question->delete();
@@ -183,32 +344,17 @@ public function create()
 
     public function destroyQuiz(Quiz $quiz)
     {
-        $quiz->questions()->each(function($question){
-            $question->choices()->delete();
-        });
-
+        foreach ($quiz->questions as $q) {
+            foreach ($q->choices as $c) {
+                if ($c->image && Storage::disk('public')->exists($c->image)) {
+                    Storage::disk('public')->delete($c->image);
+                }
+            }
+            $q->choices()->delete();
+        }
         $quiz->questions()->delete();
         $quiz->delete();
 
         return redirect()->route('quizzes.index')->with('success', 'Exam deleted successfully!');
-    }
-
-    public function edit(Quiz $quiz)
-    {
-        $modules = Module::all();
-        return view('admin.quiz_edit', compact('quiz', 'modules'));
-    }
-
-    public function update(Request $request, Quiz $quiz)
-    {
-        $validated = $request->validate([
-            'module_id' => 'required|exists:modules,id',
-            'title' => 'required|string',
-            'description' => 'nullable|string',
-        ]);
-
-        $quiz->update($validated);
-
-        return redirect()->route('quizzes.index')->with('success', 'Quiz updated successfully!');
     }
 }

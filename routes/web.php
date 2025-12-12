@@ -30,22 +30,22 @@ Route::get('/subjects/{subject}/edit', [SubjectController::class, 'edit'])->name
 Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
 Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
 
-// Quizzes
+
 Route::get('/quizzes', [QuizController::class, 'index'])->name('quizzes.index');
 Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
 Route::post('/quizzes', [QuizController::class, 'store'])->name('quizzes.store');
 Route::get('/quizzes/{quiz}', [QuizController::class, 'show'])->name('quizzes.show');
-Route::get('/quizzes/{quiz}/questions', [QuizController::class, 'questions'])->name('quizzes.questions');
-Route::post('/quizzes/{quiz}/questions', [QuizController::class, 'addQuestion'])->name('quizzes.questions.store');
 Route::get('/quizzes/{quiz}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
 Route::put('/quizzes/{quiz}', [QuizController::class, 'update'])->name('quizzes.update');
-Route::delete('/quizzes/{quiz}/questions/{question}', [QuizController::class, 'destroy'])->name('quizzes.questions.destroy');
 Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroyQuiz'])->name('quizzes.destroy');
 
-// Update questions
-Route::put('/quizzes/{quiz}/questions/{question}', [QuizController::class, 'updateQuestion'])->name('questions.update');
-Route::get('/quizzes/{quiz}/questions/{question}/edit', [QuizController::class, 'editQuestion'])->name('questions.edit');
-
+/* Questions under a quiz */
+Route::get('/quizzes/{quiz}/questions', [QuizController::class, 'questions'])->name('quizzes.questions');
+Route::post('/quizzes/{quiz}/questions', [QuizController::class, 'addQuestion'])->name('quizzes.questions.store');
+Route::put('/quizzes/{quiz}/questions/{question}', [QuizController::class, 'updateQuestion'])->name('quizzes.questions.update');
+Route::delete('/quizzes/{quiz}/questions/{question}', [QuizController::class, 'destroy'])->name('quizzes.questions.destroy');
+// Optional: JSON fetch for a question in a modal
+Route::get('/quizzes/{quiz}/questions/{question}/edit', [QuizController::class, 'editQuestion'])->name('quizzes.questions.edit');
 // Quiz Import
 Route::get('/importQuiz', [QuizImportController::class, 'showForm'])->name('form');
 Route::post('/importQuiz', [QuizImportController::class, 'import'])->name('quiz.import');
@@ -53,18 +53,19 @@ Route::post('/importQuiz', [QuizImportController::class, 'import'])->name('quiz.
 // Mnemonics
 Route::get('/mn', [MnController::class, 'index'])->name('mnemonics.index');
 Route::get('/mn/create', [MnController::class, 'create'])->name('mnemonics.create');
-Route::post('/', [MnController::class, 'store'])->name('mnemonics.store');
-Route::get('/{mnemonic}/edit', [MnController::class, 'edit'])->name('mnemonics.edit');
-Route::put('/{mnemonic}', [MnController::class, 'update'])->name('mnemonics.update');
-Route::delete('/{mnemonic}', [MnController::class, 'destroy'])->name('mnemonics.destroy');
+Route::post('/mn', [MnController::class, 'store'])->name('mnemonics.store'); // avoid POST '/'
+
+Route::get('/mn/{mnemonic}/edit', [MnController::class, 'edit'])->name('mnemonics.edit');
+Route::put('/mn/{mnemonic}', [MnController::class, 'update'])->name('mnemonics.update');
+Route::delete('/mn/{mnemonic}', [MnController::class, 'destroy'])->name('mnemonics.destroy');
 
 // Abbreviations
 Route::get('/abbreviation', [AbbreviationController::class, 'index'])->name('abbreviations.index');
-Route::get('/create', [AbbreviationController::class, 'create'])->name('abbreviations.create');
+Route::get('/abbreviation/create', [AbbreviationController::class, 'create'])->name('abbreviations.create'); // avoid plain '/create'
 Route::post('/abbreviation', [AbbreviationController::class, 'store'])->name('abbreviation.store');
-Route::get('abbreviation/{abbreviation}/edit', [AbbreviationController::class, 'edit'])->name('abbreviations.edit');
-Route::put('abbreviation/{abbreviation}', [AbbreviationController::class, 'update'])->name('abbreviations.update');
-Route::delete('abbreviation/{abbreviation}', [AbbreviationController::class, 'destroy'])->name('abbreviations.destroy');
+Route::get('/abbreviation/{abbreviation}/edit', [AbbreviationController::class, 'edit'])->name('abbreviations.edit');
+Route::put('/abbreviation/{abbreviation}', [AbbreviationController::class, 'update'])->name('abbreviations.update');
+Route::delete('/abbreviation/{abbreviation}', [AbbreviationController::class, 'destroy'])->name('abbreviations.destroy');
 
 // Procedures
 Route::get('/procedures', [ProcedureController::class, 'index'])->name('procedures.index');
