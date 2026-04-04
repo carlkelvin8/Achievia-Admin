@@ -20,13 +20,13 @@ class SubjectController extends Controller
         $subjects = $query->paginate(20)->withQueryString();
         $courses  = \App\Models\Course::select('id', 'title')->orderBy('title')->get();
 
-        return view('admin.subject', compact('subjects', 'courses'));
+        return view('admin.subjects_index', compact('subjects', 'courses'));
     }
 
     public function create()
     {
         $courses = Course::select('id', 'title')->orderBy('title')->get();
-        return view('admin.create_subjects', compact('courses'));
+        return view('admin.subjects_create', compact('courses'));
     }
 
     public function store(Request $request)
@@ -55,7 +55,7 @@ class SubjectController extends Controller
     public function edit(Subject $subject)
     {
         $courses = Course::select('id', 'title')->orderBy('title')->get();
-        return view('admin.edit_subjects', compact('subject', 'courses'));
+        return view('admin.subjects_edit', compact('subject', 'courses'));
     }
 
     /**

@@ -56,7 +56,7 @@ public function index(Request $request)
     $rows     = $query->paginate(15)->withQueryString();
     $subjects = \App\Models\Subject::select('id', 'title')->orderBy('title')->get();
 
-    return view('admin.quiz', [
+    return view('admin.quizzes_index', [
         'rows'           => $rows,
         'quizzes'        => $rows,
         'subjects'       => $subjects,
@@ -68,7 +68,7 @@ public function index(Request $request)
     {
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         $modules  = Module::select('id', 'title')->orderBy('title')->get();
-        return view('admin.quiz_create', compact('subjects', 'modules'));
+        return view('admin.quizzes_create', compact('subjects', 'modules'));
     }
 
     public function store(Request $request)
@@ -99,7 +99,7 @@ public function index(Request $request)
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         $modules  = Module::select('id', 'title')->orderBy('title')->get();
 
-        return view('admin.quiz_edit', compact('quiz', 'subjects', 'modules'));
+        return view('admin.quizzes_edit', compact('quiz', 'subjects', 'modules'));
     }
 
     public function update(Request $request, Quiz $quiz)

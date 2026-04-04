@@ -16,7 +16,7 @@ class CourseController extends Controller
         $courses = Course::withCount('subjects')
             ->orderBy('id', 'desc')
             ->paginate(20);
-        return view('admin.courses', compact('courses'));
+        return view('admin.courses_index', compact('courses'));
     }
 
     /**
@@ -25,7 +25,7 @@ class CourseController extends Controller
     public function create()
     {
         $users = User::whereIn('role', ['teacher', 'admin'])->get();
-        return view('admin.create_courses', compact('users'));
+        return view('admin.courses_create', compact('users'));
     }
 
     /**
@@ -56,7 +56,7 @@ class CourseController extends Controller
     public function edit(Course $course)
     {
         $users = User::whereIn('role', ['teacher', 'admin'])->get();
-        return view('admin.edit_courses', compact('course', 'users'));
+        return view('admin.courses_edit', compact('course', 'users'));
     }
 
     /**

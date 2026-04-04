@@ -29,12 +29,12 @@ class ModuleController extends Controller
 
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
 
-        return view('admin.admin_modules', compact('modules', 'subjects', 'subjectId'));
+        return view('admin.modules_index', compact('modules', 'subjects', 'subjectId'));
     }
     
     public function create() {
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
-        return view('admin.upload_modules', compact('subjects'));
+        return view('admin.modules_create', compact('subjects'));
     }
 
     public function store(Request $request) {
@@ -66,7 +66,7 @@ class ModuleController extends Controller
     public function edit($id) {
         $module   = Module::findOrFail($id);
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
-        return view('admin.edit_modules', compact('module', 'subjects'));
+        return view('admin.modules_edit', compact('module', 'subjects'));
     }
 
     public function update(Request $request, $id) {

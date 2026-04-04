@@ -46,7 +46,7 @@ class AdminDashboardController extends Controller
             $enrollmentData[] = $enrollmentByMonth[$m] ?? 0;
         }
 
-        return view('admin.admin', compact(
+        return view('admin.dashboard', compact(
             'users', 'students', 'teachers', 'courses',
             'quizzes', 'questions', 'subjects',
             'recentStudents', 'monthLabels', 'enrollmentData'

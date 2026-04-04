@@ -13,7 +13,7 @@ class QuizImportController extends Controller
 {
     public function showForm()
     {
-        return view('admin.import_quiz');
+        return view('admin.quizzes_import');
     }
 
     public function import(Request $request)

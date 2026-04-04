@@ -19,13 +19,13 @@ class MnController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(20)->withQueryString();
 
-        return view('admin.mn', compact('mnemonics', 'subjects', 'subjectId'));
+        return view('admin.mnemonics_index', compact('mnemonics', 'subjects', 'subjectId'));
     }
 
     public function create()
     {
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
-        return view('admin.create_mn', compact('subjects'));
+        return view('admin.mnemonics_create', compact('subjects'));
     }
 
     public function store(Request $request)
@@ -55,7 +55,7 @@ class MnController extends Controller
     public function edit(Mnemonic $mnemonic)
     {
         $subjects = Subject::select('id', 'title')->orderBy('title')->get();
-        return view('admin.edit_mn', compact('mnemonic', 'subjects'));
+        return view('admin.mnemonics_edit', compact('mnemonic', 'subjects'));
     }
 
     public function update(Request $request, Mnemonic $mnemonic)

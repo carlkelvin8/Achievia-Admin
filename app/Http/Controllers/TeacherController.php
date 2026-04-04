@@ -12,7 +12,7 @@ class TeacherController extends Controller
             ->with('section')
             ->orderBy('id', 'desc')
             ->paginate(20);
-        return view('admin.teachers', compact('teachers'));
+        return view('admin.teachers_index', compact('teachers'));
     }
 
     public function destroy($id) {
@@ -29,7 +29,7 @@ class TeacherController extends Controller
 
         $teacher = User::findorFail($id);
 
-        return view('admin.edit_teacher', compact('teacher'));
+        return view('admin.teachers_edit', compact('teacher'));
 
     }
 
@@ -37,7 +37,7 @@ class TeacherController extends Controller
 
         $teacher = User::findorFail($id);
 
-        return view('admin.teacher_profile', compact('teacher'));
+        return view('admin.teachers_show', compact('teacher'));
 
     }
 

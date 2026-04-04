@@ -9,7 +9,7 @@ use App\Models\User;
 class AuthAdminController extends Controller
 {
     public function index() {
-        return view('admin.auth');
+        return view('admin.auth_login');
     }
 
     public function authDisplay(){
@@ -44,7 +44,7 @@ class AuthAdminController extends Controller
     
 
     public function showRegister(){
-        return view('admin.register_admin');
+        return view('admin.auth_register');
     }
 
     public function register(Request $request) {

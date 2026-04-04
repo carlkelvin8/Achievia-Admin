@@ -15,19 +15,19 @@ class ManageStudentController extends Controller
             ->with('section')
             ->orderBy('id', 'desc')
             ->paginate(20);
-        return view('admin.students', compact('students'));
+        return view('admin.students_index', compact('students'));
     }
     
 
     public function show($id) {
         $students = User::findorFail($id);
-        return view('admin.view_students', compact('students'));
+        return view('admin.students_show', compact('students'));
     }
 
 
     public function edit($id){
         $students = User::findorFail($id);
-        return view('admin.edit_students', compact('students'));
+        return view('admin.students_edit', compact('students'));
     }
     public function destroy($id) {
 
@@ -73,7 +73,7 @@ if ($request->hasFile('profile_image')) {
     public function sections($id){
         $sections = Section::where('user_id', $id)->where('status', 'published')->get();
 
-        return view('admin.students', compact('sections'));
+        return view('admin.students_index', compact('sections'));
     }
 
 }
