@@ -3,9 +3,12 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:import": "playwright test tests/playwright/quiz-import-performance.spec.js",
+        "test:perf": "playwright test tests/playwright/performance.spec.js --reporter=list"
     },
     "devDependencies": {
+        "@playwright/test": "^1.58.2",
         "@tailwindcss/vite": "^4.0.0",
         "autoprefixer": "^10.4.21",
         "axios": "^1.8.2",

@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Storage;
 class ManageStudentController extends Controller
 {
     public function index() {
-        $students = User::where('role', 'student')->with('section')->get();
+        $students = User::where('role', 'student')
+            ->with('section')
+            ->orderBy('id', 'desc')
+            ->paginate(20);
         return view('admin.students', compact('students'));
     }
     

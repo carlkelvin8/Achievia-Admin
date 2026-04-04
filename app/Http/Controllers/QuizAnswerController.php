@@ -37,23 +37,20 @@ class QuizAnswerController extends Controller
 
         $answers = $validated['answers'];
 
+        $insertRows = [];
         foreach ($answers as $questionId => $choiceId) {
-            QuizAnswer::create([
-                'user_id' => $user->id,
-                'quiz_id' => $quiz->id,
+            $insertRows[] = [
+                'user_id'     => $user->id,
+                'quiz_id'     => $quiz->id,
                 'question_id' => $questionId,
-                'choice_id' => $choiceId,
-            ]);
+                'choice_id'   => $choiceId,
+            ];
         }
+        QuizAnswer::insert($insertRows);
 
-        // Optional: calculate score
-        $correct = 0;
-        foreach ($answers as $questionId => $choiceId) {
-            $isCorrect = Choice::where('id', $choiceId)->value('is_correct');
-            if ($isCorrect) {
-                $correct++;
-            }
-        }
+        // Calculate score using a single query
+        $choiceIds = array_values($answers);
+        $correct   = Choice::whereIn('id', $choiceIds)->where('is_correct', 1)->count();
 
         return redirect()->route('quizzes.index')->with('success', "Quiz submitted! You scored $correct out of " . count($answers));
     }

@@ -10,24 +10,22 @@ class ProcedureController extends Controller
     public function index(Request $request)
     {
         $subjectId = $request->input('subject_id');
-    
-        // Load subjects for the filter dropdown
-        $subjects = Subject::all();
-    
-        $procedures = Procedure::query()
+        $subjects  = Subject::select('id', 'title')->orderBy('title')->get();
+
+        $procedures = Procedure::with('subject')
             ->when($subjectId, fn($query) => $query->where('subject_id', $subjectId))
-            ->latest()
-            ->get();
-    
+            ->orderBy('id', 'desc')
+            ->paginate(20)->withQueryString();
+
         return view('admin.procedures_index', compact('procedures', 'subjects', 'subjectId'));
     }
     
 
     public function create()
-{
-    $subjects = Subject::all(); // Get all subjects
-    return view('admin.procedures_create', compact('subjects'));
-}
+    {
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
+        return view('admin.procedures_create', compact('subjects'));
+    }
 
     public function store(Request $request)
     {
@@ -56,7 +54,7 @@ class ProcedureController extends Controller
 
     public function edit(Procedure $procedure)
     {
-        $subjects = Subject::all(); // load all subjects for the select dropdown
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('admin.procedures_edit', compact('procedure', 'subjects'));
     }
     

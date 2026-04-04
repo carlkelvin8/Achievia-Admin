@@ -13,7 +13,9 @@ class CourseController extends Controller
      */
     public function index()
     {
-        $courses = Course::with('user')->latest()->get();
+        $courses = Course::withCount('subjects')
+            ->orderBy('id', 'desc')
+            ->paginate(20);
         return view('admin.courses', compact('courses'));
     }
 

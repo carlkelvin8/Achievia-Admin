@@ -33,8 +33,10 @@
   </label>
 </div>
 
-<div class="flex justify-center">
-  <img src="{{ asset('storage/' . $module->image) }}" alt="Module Image" class="w-[300px] h-[300px] object-cover rounded-md shadow-md">
+<div class="flex justify-center my-6">
+  @if($module->image)
+    <img src="{{ asset('storage/' . $module->image) }}" alt="Module Image" class="w-[300px] h-[300px] object-cover rounded-md shadow-md">
+  @endif
 </div>
 
 

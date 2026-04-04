@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Topic extends Model
 {
+    public $timestamps = false;
+    
     protected $fillable = [
         'title', 'subject_id', 'content', 'video_link'
     ];

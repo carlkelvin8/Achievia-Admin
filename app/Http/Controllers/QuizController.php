@@ -34,8 +34,9 @@ class QuizController extends Controller
 
 public function index(Request $request)
 {
-    // optional filters; safe even if you don't use them in the view yet
-    $query = \App\Models\Quiz::withCount('questions')->latest();
+    $query = \App\Models\Quiz::with('subject', 'module')
+        ->withCount('questions')
+        ->orderBy('id', 'desc');
 
     if ($request->filled('subject_id')) {
         $query->where('subject_id', $request->input('subject_id'));
@@ -52,28 +53,29 @@ public function index(Request $request)
         });
     }
 
-    $rows      = $query->paginate(15);
-    $subjects  = \App\Models\Subject::select('id','title')->orderBy('title')->get();
+    $rows     = $query->paginate(15)->withQueryString();
+    $subjects = \App\Models\Subject::select('id', 'title')->orderBy('title')->get();
 
     return view('admin.quiz', [
-        'rows'            => $rows,
-        'quizzes'         => $rows,
-        'subjects'        => $subjects,            // <-- pass this
-        'totalQuestions'  => $rows->getCollection()->sum('questions_count'),
+        'rows'           => $rows,
+        'quizzes'        => $rows,
+        'subjects'       => $subjects,
+        'totalQuestions' => $rows->getCollection()->sum('questions_count'),
     ]);
 }
 
     public function create()
     {
-        $subjects = Subject::select('id','title')->orderBy('title')->get();
-        return view('admin.quiz_create', compact('subjects'));
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
+        $modules  = Module::select('id', 'title')->orderBy('title')->get();
+        return view('admin.quiz_create', compact('subjects', 'modules'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'subject_id'  => 'required|exists:subjects,id',
-            'module_id'   => 'nullable|exists:modules,id',   // <-- add
+            'module_id'   => 'required|exists:modules,id',
             'title'       => 'required|string',
             'description' => 'nullable|string',
         ]);
@@ -119,10 +121,37 @@ public function index(Request $request)
     }
 
   
-    public function questions(Quiz $quiz)
+    public function questions(Quiz $quiz, Request $request)
     {
-        $quiz->load('questions.choices');
-        return view('admin.questions', compact('quiz'));
+        $questions = $quiz->questions()
+            ->select('id', 'quiz_id', 'question_text', 'question_type', 'image_path', 'correct_description', 'notes')
+            ->with(['choices:id,question_id,choice_text,image,is_correct'])
+            ->when($request->filled('search'), fn($q) => $q->where('question_text', 'like', '%'.$request->input('search').'%'))
+            ->orderBy('id')
+            ->paginate(50)
+            ->withQueryString();
+
+        // Pre-build compact JS data to avoid complex expressions in Blade
+        $questionsJson = $questions->keyBy('id')->map(function ($q) {
+            return [
+                'id'    => $q->id,
+                'qt'    => $q->question_text,
+                'type'  => $q->question_type,
+                'img'   => $q->image_path,
+                'exp'   => $q->correct_description,
+                'notes' => $q->notes,
+                'ch'    => $q->choices->map(function ($c) {
+                    return [
+                        'id'  => $c->id,
+                        't'   => $c->choice_text,
+                        'img' => $c->image,
+                        'ok'  => (bool) $c->is_correct,
+                    ];
+                })->values(),
+            ];
+        });
+
+        return view('admin.questions', compact('quiz', 'questions', 'questionsJson'));
     }
 
     public function editQuestion(Quiz $quiz, Question $question)
@@ -330,11 +359,12 @@ public function index(Request $request)
             Storage::disk('public')->delete($question->image_path);
         }
 
-        $question->choices()->each(function ($c) {
+        $question->load('choices');
+        foreach ($question->choices as $c) {
             if ($c->image && Storage::disk('public')->exists($c->image)) {
                 Storage::disk('public')->delete($c->image);
             }
-        });
+        }
 
         $question->choices()->delete();
         $question->delete();
@@ -344,6 +374,8 @@ public function index(Request $request)
 
     public function destroyQuiz(Quiz $quiz)
     {
+        $quiz->load('questions.choices');
+
         foreach ($quiz->questions as $q) {
             foreach ($q->choices as $c) {
                 if ($c->image && Storage::disk('public')->exists($c->image)) {

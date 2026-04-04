@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Quiz extends Model
 {
     protected $table = 'quizzes';
-    public $timestamps = false; // no updated_at in DB; created_at is defaulted by DB
+    public $timestamps = false; // Disable timestamps for now
 
     protected $fillable = [
         'title',

@@ -12,22 +12,19 @@ class MnController extends Controller
     public function index(Request $request)
     {
         $subjectId = $request->input('subject_id');
+        $subjects  = Subject::select('id', 'title')->orderBy('title')->get();
 
-        // Load subjects for the filter dropdown
-        $subjects = Subject::all();
-
-        // Query mnemonics, optionally filtering by subject
         $mnemonics = Mnemonic::with('subject')
             ->when($subjectId, fn($query) => $query->where('subject_id', $subjectId))
-            ->latest()
-            ->get();
+            ->orderBy('id', 'desc')
+            ->paginate(20)->withQueryString();
 
         return view('admin.mn', compact('mnemonics', 'subjects', 'subjectId'));
     }
 
     public function create()
     {
-        $subjects = Subject::all(); // Load subjects for selection
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('admin.create_mn', compact('subjects'));
     }
 
@@ -57,7 +54,7 @@ class MnController extends Controller
 
     public function edit(Mnemonic $mnemonic)
     {
-        $subjects = Subject::all(); // Load subjects for selection
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('admin.edit_mn', compact('mnemonic', 'subjects'));
     }
 

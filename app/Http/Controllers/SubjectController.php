@@ -11,21 +11,21 @@ class SubjectController extends Controller
 
     public function index(Request $request)
     {
-        $query = Subject::with('course')->latest();
-    
+        $query = Subject::with('course')->orderBy('id', 'desc');
+
         if ($request->filled('course_id')) {
             $query->where('course_id', $request->course_id);
         }
-    
-        $subjects = $query->get();
-        $courses = \App\Models\Course::all(); // for dropdown
-    
+
+        $subjects = $query->paginate(20)->withQueryString();
+        $courses  = \App\Models\Course::select('id', 'title')->orderBy('title')->get();
+
         return view('admin.subject', compact('subjects', 'courses'));
     }
 
     public function create()
     {
-        $courses = Course::all();
+        $courses = Course::select('id', 'title')->orderBy('title')->get();
         return view('admin.create_subjects', compact('courses'));
     }
 
@@ -54,7 +54,7 @@ class SubjectController extends Controller
      */
     public function edit(Subject $subject)
     {
-        $courses = Course::all();
+        $courses = Course::select('id', 'title')->orderBy('title')->get();
         return view('admin.edit_subjects', compact('subject', 'courses'));
     }
 

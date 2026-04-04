@@ -11,7 +11,7 @@
     <!-- Logo on top -->
     <a href="{{ url('/') }}" class="flex justify-center">
       <img
-        src="{{ asset('images/logo.png') }}"
+        src="{{ asset('images/logo.jpg') }}"
         alt="{{ config('app.name') }} logo"
         class="mx-auto h-12 w-auto"
       />

@@ -8,10 +8,11 @@ use Illuminate\Support\Facades\Storage;
 class TeacherController extends Controller
 {
     public function index() {
-        $teachers = User::where('role', 'teacher')->get();
-
+        $teachers = User::where('role', 'teacher')
+            ->with('section')
+            ->orderBy('id', 'desc')
+            ->paginate(20);
         return view('admin.teachers', compact('teachers'));
-
     }
 
     public function destroy($id) {

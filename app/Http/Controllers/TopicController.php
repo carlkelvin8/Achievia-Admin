@@ -13,7 +13,9 @@ class TopicController extends Controller
      */
     public function index()
     {
-        $topics = Topic::with('subject')->latest()->get();
+        $topics = Topic::with('subject')
+            ->orderBy('id', 'desc')
+            ->paginate(20);
         return view('topics.index', compact('topics'));
     }
 
@@ -22,7 +24,7 @@ class TopicController extends Controller
      */
     public function create()
     {
-        $subjects = Subject::all();
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('topics.create', compact('subjects'));
     }
 
@@ -48,7 +50,7 @@ class TopicController extends Controller
      */
     public function edit(Topic $topic)
     {
-        $subjects = Subject::all();
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('topics.edit', compact('topic', 'subjects'));
     }
 

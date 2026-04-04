@@ -10,7 +10,7 @@
         <!-- Brand on top -->
         <div class="text-center mb-6">
             <a href="{{ url('/') }}" class="inline-flex items-center justify-center">
-                <img src="{{ asset('storage/images/logo.png') }}" alt="Achievia logo" class="h-40 w-40">
+                <img src="{{ asset('images/logo.jpg') }}" alt="Achievia logo" class="h-40 w-40">
                 <span class="text-6xl font-extrabold tracking-tight">
   <span class="text-blue-900">Achie</span><span class="text-sky-500">via</span>
   <p class="text-base font-medium text-gray-500 tracking-wide">Awaken Academic Ambition</p>

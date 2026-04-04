@@ -3,11 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\QuizImportController;
 use App\Http\Controllers\MnController;
 use App\Http\Controllers\AbbreviationController;
 use App\Http\Controllers\ProcedureController;
+use App\Http\Controllers\TopicController;
 
 // Home
 Route::get('/', function () {
@@ -30,6 +32,14 @@ Route::get('/subjects/{subject}/edit', [SubjectController::class, 'edit'])->name
 Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
 Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
 
+// Modules
+Route::get('/modules', [ModuleController::class, 'index'])->name('modules.index');
+Route::get('/modules/create', [ModuleController::class, 'create'])->name('modules.create');
+Route::post('/modules', [ModuleController::class, 'store'])->name('modules.store');
+Route::get('/modules/{module}/edit', [ModuleController::class, 'edit'])->name('modules.edit');
+Route::put('/modules/{module}', [ModuleController::class, 'update'])->name('modules.update');
+Route::delete('/modules/{module}', [ModuleController::class, 'destroy'])->name('modules.destroy');
+
 
 Route::get('/quizzes', [QuizController::class, 'index'])->name('quizzes.index');
 Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
@@ -46,9 +56,13 @@ Route::put('/quizzes/{quiz}/questions/{question}', [QuizController::class, 'upda
 Route::delete('/quizzes/{quiz}/questions/{question}', [QuizController::class, 'destroy'])->name('quizzes.questions.destroy');
 // Optional: JSON fetch for a question in a modal
 Route::get('/quizzes/{quiz}/questions/{question}/edit', [QuizController::class, 'editQuestion'])->name('quizzes.questions.edit');
-// Quiz Import
-Route::get('/importQuiz', [QuizImportController::class, 'showForm'])->name('form');
-Route::post('/importQuiz', [QuizImportController::class, 'import'])->name('quiz.import');
+
+// Quiz Import (Protected)
+Route::middleware('auth')->group(function () {
+    Route::get('/importQuiz', [QuizImportController::class, 'showForm'])->name('quiz.import.form');
+    Route::post('/importQuiz', [QuizImportController::class, 'import'])->name('quiz.import');
+    Route::get('/importQuiz/template', [QuizImportController::class, 'downloadTemplate'])->name('quiz.template');
+});
 
 // Mnemonics
 Route::get('/mn', [MnController::class, 'index'])->name('mnemonics.index');
@@ -74,6 +88,14 @@ Route::post('/procedures', [ProcedureController::class, 'store'])->name('procedu
 Route::get('/procedures/{procedure}/edit', [ProcedureController::class, 'edit'])->name('procedures.edit');
 Route::put('/procedures/{procedure}', [ProcedureController::class, 'update'])->name('procedures.update');
 Route::delete('/procedures/{procedure}', [ProcedureController::class, 'destroy'])->name('procedures.destroy');
+
+// Topics
+Route::get('/topics', [TopicController::class, 'index'])->name('topics.index');
+Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
+Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
+Route::get('/topics/{topic}/edit', [TopicController::class, 'edit'])->name('topics.edit');
+Route::put('/topics/{topic}', [TopicController::class, 'update'])->name('topics.update');
+Route::delete('/topics/{topic}', [TopicController::class, 'destroy'])->name('topics.destroy');
 
 // Auth & Admin
 require __DIR__ . '/auth.php';

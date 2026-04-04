@@ -21,17 +21,16 @@
       <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
         <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
         <div class="flex items-center space-x-4">
-          <button aria-label="Search" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-700 focus:outline-none" type="button">
-            <i class="fas fa-search text-lg"></i>
-          </button>
-          <button aria-label="Notifications" class="relative inline-flex items-center p-2 text-gray-500 hover:text-gray-700 focus:outline-none" type="button">
-            <i class="fas fa-bell text-lg"></i>
-            <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">5</span>
-          </button>
           <div class="relative">
             <button aria-expanded="false" aria-haspopup="true" class="flex items-center space-x-2 focus:outline-none" id="user-menu-button" type="button">
-              <img alt="User  profile picture" class="h-8 w-8 rounded-full object-cover" src="https://storage.googleapis.com/a1aa/image/9177fe23-83cd-4b44-8257-e5e16ef161a8.jpg"/>
-              <span class="text-gray-700 font-medium">Emily Johnson</span>
+              @if (auth()->user()->profile_image)
+                <img alt="Admin profile" class="h-8 w-8 rounded-full object-cover" src="{{ asset('storage/' . auth()->user()->profile_image) }}"/>
+              @else
+                <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm">
+                  {{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}{{ strtoupper(substr(auth()->user()->last_name, 0, 1)) }}
+                </div>
+              @endif
+              <span class="text-gray-700 font-medium">{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</span>
               <i class="fas fa-chevron-down text-gray-500"></i>
             </button>
           </div>
@@ -63,24 +62,54 @@
           </div>
           <div>
             <p class="text-sm font-medium text-gray-500">Courses</p>
-            <p class="text-2xl font-semibold text-gray-900">56</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ $courses }}</p>
           </div>
         </div>
-        <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4" title="Upcoming scheduled classes this week">
+        <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4" title="Total quiz questions in the system">
           <div class="p-3 rounded-full bg-purple-100 text-purple-600">
-            <i class="fas fa-calendar-alt fa-lg"></i>
+            <i class="fas fa-question-circle fa-lg"></i>
           </div>
           <div>
-            <p class="text-sm font-medium text-gray-500">Admin</p>
-            <p class="text-2xl font-semibold text-gray-900">18</p>
+            <p class="text-sm font-medium text-gray-500">Questions</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ $questions }}</p>
+          </div>
+        </div>
+      </section>
+      <!-- Secondary stats -->
+      <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+            <i class="fas fa-clipboard-list fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-500">Quizzes</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ $quizzes }}</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-pink-100 text-pink-600">
+            <i class="fas fa-layer-group fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-500">Subjects</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ $subjects }}</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+            <i class="fas fa-users fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-500">Total Users</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ $students + $teachers }}</p>
           </div>
         </div>
       </section>
       <!-- Charts and tables -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <!-- Chart placeholder -->
+        <!-- Enrollment chart -->
         <div class="bg-white rounded-lg shadow p-6 lg:col-span-2">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Enrollment Trends</h2>
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Student Enrollment — {{ now()->year }}</h2>
           <canvas id="enrollmentChart" class="w-full h-72"></canvas>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -89,13 +118,13 @@
           new Chart(ctx, {
             type: 'line',
             data: {
-              labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+              labels: @json($monthLabels),
               datasets: [{
-                label: 'Number of Students',
-                data: [120, 135, 150, 165, 180, 200, 220],
-                fill: false,
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgb(59, 130, 246)',
+                label: 'New Students',
+                data: @json($enrollmentData),
+                fill: true,
+                borderColor: 'rgb(99, 102, 241)',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 tension: 0.4,
                 pointRadius: 5,
                 pointHoverRadius: 7
@@ -104,51 +133,38 @@
             options: {
               responsive: true,
               plugins: {
-                legend: {
-                  display: true,
-                  position: 'top'
-                },
-                tooltip: {
-                  mode: 'index',
-                  intersect: false
-                }
-              },
-              interaction: {
-                mode: 'nearest',
-                intersect: false
+                legend: { display: true, position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
               },
               scales: {
-                x: {
-                  title: {
-                    display: true,
-                    text: 'Month'
-                  }
-                },
-                y: {
-                  title: {
-                    display: true,
-                    text: 'Students Enrolled'
-                  },
-                  beginAtZero: true
-                }
+                x: { title: { display: true, text: 'Month' } },
+                y: { title: { display: true, text: 'Students Enrolled' }, beginAtZero: true, ticks: { precision: 0 } }
               }
             }
           });
         </script>
-        <!-- Recent activity -->
+        <!-- Recent students -->
         <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Recently Joined</h2>
           <ul class="divide-y divide-gray-200 max-h-72 overflow-y-auto">
-            <!-- Recent activity items -->
-            <li class="py-3 flex items-center space-x-4">
-              <img alt="Profile picture of Sarah Lee" class="h-10 w-10 rounded-full object-cover" src="https://storage.googleapis.com/a1aa/image/497bcb90-5e3a-42bc-8c31-0e61c77e9ea2.jpg"/>
+            @forelse ($recentStudents as $student)
+            <li class="py-3 flex items-center space-x-3">
+              @if ($student->profile_image)
+                <img alt="Profile of {{ $student->first_name }}" class="h-9 w-9 rounded-full object-cover" src="{{ asset('storage/' . $student->profile_image) }}"/>
+              @else
+                <div class="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm flex-shrink-0">
+                  {{ strtoupper(substr($student->first_name, 0, 1)) }}{{ strtoupper(substr($student->last_name, 0, 1)) }}
+                </div>
+              @endif
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900">Sarah Lee</p>
-                <p class="text-sm text-gray-500 truncate">Enrolled in 'Advanced Math'</p>
+                <p class="text-sm font-medium text-gray-900 truncate">{{ $student->first_name }} {{ $student->last_name }}</p>
+                <p class="text-xs text-gray-500 truncate">{{ $student->email }}</p>
               </div>
-              <div class="text-sm text-gray-500">1h ago</div>
+              <span class="text-xs text-gray-400">{{ $student->created_at ? $student->created_at->diffForHumans() : '' }}</span>
             </li>
-            <!-- Additional activity items can be added here -->
+            @empty
+            <li class="py-4 text-sm text-gray-500 text-center">No students yet.</li>
+            @endforelse
           </ul>
         </div>
       </section>
@@ -169,31 +185,42 @@
                 </th>
               </tr>
             </thead>
-            @foreach ($users as $user )
+            @foreach ($users as $user)
             <tbody class="bg-white divide-y divide-gray-200">
               <tr>
                 <td class="px-6 py-4 whitespace-nowrap flex items-center space-x-3">
-                  <img alt="Profile picture of Sarah Lee" class="h-10 w-10 rounded-full object-cover" src="https://storage.googleapis.com/a1aa/image/497bcb90-5e3a-42bc-8c31-0e61c77e9ea2.jpg"/>
+                  @if ($user->profile_image)
+                    <img alt="Profile of {{ $user->first_name }}" class="h-10 w-10 rounded-full object-cover" src="{{ asset('storage/' . $user->profile_image) }}"/>
+                  @else
+                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm flex-shrink-0">
+                      {{ strtoupper(substr($user->first_name, 0, 1)) }}{{ strtoupper(substr($user->last_name, 0, 1)) }}
+                    </div>
+                  @endif
                   <div class="text-sm font-medium text-gray-900">{{ $user->first_name }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->last_name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->email }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->age }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">{{ strtoupper($user->status) }}</span>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $user->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                    {{ strtoupper($user->status) }}
+                  </span>
                 </td>
-                <td class="whitespace-nowrap text-right text-sm font-medium">
-                <a class="text-blue-600 hover:text-blue-900" href="#">Edit</a>
-                <a class="text-black hover:text-blue-600" href="#">View</a>
-                  <a class="text-red-600 hover:text-blue-900" href="#">Delete</a>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                  <a class="text-blue-600 hover:text-blue-900" href="{{ route('students.edit', $user->id) }}">Edit</a>
+                  <a class="text-gray-700 hover:text-indigo-600" href="{{ route('students.show', $user->id) }}">View</a>
+                  <form action="{{ route('students.destroy', $user->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this student?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                  </form>
                 </td>
               </tr>
-              <!-- Additional student rows can be added here -->
             </tbody>
             @endforeach
           </table>
         </div>
       </section>
+      <div class="mt-4">{{ $users->links() }}</div>
     </main>
   </div>
 </body>

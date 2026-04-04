@@ -12,29 +12,29 @@ class ModuleController extends Controller
 {
 
     public function index(Request $request) {
-        $subjectId = $request->input('subject'); // Get selected subject
-    
+        $subjectId = $request->input('subject');
+
         if (Auth::user()->role === 'teacher') {
-            $modules = Module::where('user_id', Auth::id())
+            $modules = Module::with('subject')
+                             ->where('user_id', Auth::id())
                              ->when($subjectId, fn($q) => $q->where('subject_id', $subjectId))
-                             ->get();
+                             ->orderBy('id', 'desc')
+                             ->paginate(20)->withQueryString();
         } else {
             $modules = Module::with('subject')
                              ->when($subjectId, fn($q) => $q->where('subject_id', $subjectId))
-                             ->latest()
-                             ->get();
+                             ->orderBy('id', 'desc')
+                             ->paginate(20)->withQueryString();
         }
-    
-        $subjects = Subject::all(); // Load subjects for dropdown
-    
+
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
+
         return view('admin.admin_modules', compact('modules', 'subjects', 'subjectId'));
     }
     
     public function create() {
-
-        $subjects = Subject::all();
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('admin.upload_modules', compact('subjects'));
-
     }
 
     public function store(Request $request) {
@@ -64,11 +64,9 @@ class ModuleController extends Controller
     
 
     public function edit($id) {
-
-        $module = Module::findorFail($id);
-        $subjects = Subject::all();
+        $module   = Module::findOrFail($id);
+        $subjects = Subject::select('id', 'title')->orderBy('title')->get();
         return view('admin.edit_modules', compact('module', 'subjects'));
-
     }
 
     public function update(Request $request, $id) {
@@ -84,12 +82,16 @@ class ModuleController extends Controller
         $module = Module::findorFail($id);
 
         if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($module->image);
+            if ($module->image) {
+                Storage::disk('public')->delete($module->image);
+            }
             $validatedData['image'] = $request->file('image')->store('uploads', 'public');
         }
 
         if ($request->hasFile('file')) {
-            Storage::disk('public')->delete($module->file);
+            if ($module->file) {
+                Storage::disk('public')->delete($module->file);
+            }
             $validatedData['file'] = $request->file('file')->store('uploads', 'public');
         }
 
@@ -102,8 +104,13 @@ class ModuleController extends Controller
 
         $module = Module::findorFail($id);
 
-        Storage::disk('public')->delete($module->file);
-        Storage::disk('public')->delete($module->image);
+        if ($module->file) {
+            Storage::disk('public')->delete($module->file);
+        }
+        
+        if ($module->image) {
+            Storage::disk('public')->delete($module->image);
+        }
 
         $module->delete();
 

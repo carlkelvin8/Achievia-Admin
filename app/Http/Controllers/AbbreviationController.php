@@ -36,7 +36,7 @@ class AbbreviationController extends Controller
                       ->orWhere('full_form',  'like', $like);
                 });
             })
-            ->latest()
+            ->orderBy("id", "desc")
             ->paginate(15)
             ->appends($request->query());
 

@@ -11,6 +11,8 @@
   .rte-preview sub { vertical-align: sub; }
 </style>
   <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
   <div class="flex flex-1 overflow-hidden">

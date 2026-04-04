@@ -59,60 +59,67 @@
                 </th>
               </tr>
             </thead>
-            @foreach ($modules as $module)
             <tbody class="bg-white divide-y divide-gray-200">
+            @forelse ($modules as $module)
               <tr>
                 <td class="px-6 py-4 whitespace-nowrap flex items-center space-x-3">
-                <img src="{{ asset('storage/' . $module->image) }}" 
-     alt="Cover photo" 
-     class="h-10 w-10 rounded-full object-cover" />
-                  <div class="text-sm font-medium text-gray-900"></div>
+                  @if($module->image)
+                    <img src="{{ asset('storage/' . $module->image) }}" alt="{{ $module->title }}" class="h-10 w-10 rounded-full object-cover flex-shrink-0">
+                  @else
+                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <i class="fas fa-book text-indigo-600"></i>
+                    </div>
+                  @endif
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $module->title }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ $module->title }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $module->description }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ basename(trim($module->file)) }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $module->subject ? $module->subject->title : '—'  }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  @if($module->file)
+                    <a href="{{ asset('storage/' . $module->file) }}" target="_blank" class="text-blue-600 hover:underline">
+                      {{ basename($module->file) }}
+                    </a>
+                  @else
+                    <span class="text-gray-400">No file</span>
+                  @endif
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $module->subject ? $module->subject->title : '—' }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">{{ strtoupper($module->status) }}</span>
                 </td>
-                <td class="mt-10 text-right text-sm font-medium">
-       
-                <div class="relative inline-block text-left">
-    <!-- 3-dot icon button -->
-    <button id="menu-button-{{ $module->id }}" type="button"
-        class="inline-flex justify-center w-full p-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none"
-        onclick="document.getElementById('dropdown-{{ $module->id }}').classList.toggle('hidden')">
-        <!-- Heroicons Dots Vertical - Bigger Dots -->
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v.01M12 12v.01M12 18v.01" />
-        </svg>
-    </button>
+                <td class="px-6 py-4 text-right text-sm font-medium">
+                  <div class="relative inline-block text-left">
+                    <button id="menu-button-{{ $module->id }}" type="button"
+                        class="inline-flex justify-center w-full p-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none"
+                        onclick="document.getElementById('dropdown-{{ $module->id }}').classList.toggle('hidden')">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
+                        </svg>
+                    </button>
 
-    <!-- Dropdown -->
-    <div id="dropdown-{{ $module->id }}"
-        class="hidden absolute right-0 mt-2 w-44 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg z-50">
-        <div class="py-1">
-            <a href="{{ asset('storage/' . $module->file) }}"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" target="_blank">View Mother Notes</a>
-            <a href="{{ route('modules.edit', $module->id) }}"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</a>
-        </div>
-        <div class="py-1">
-            <form action="{{ route('modules.destroy', $module->id) }}" method="POST">
-                @csrf
-                @method('DELETE')
-                <button type="submit"
-                    class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
-            </form>
-        </div>
-    </div>
-</div>
-    
+                    <div id="dropdown-{{ $module->id }}"
+                        class="hidden absolute right-0 mt-2 w-44 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg z-50">
+                        <div class="py-1">
+                            <a href="{{ route('modules.edit', $module->id) }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</a>
+                        </div>
+                        <div class="py-1">
+                            <form action="{{ route('modules.destroy', $module->id) }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                    class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-100">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
-              <!-- Additional student rows can be added here -->
+            @empty
+              <tr>
+                <td colspan="7" class="px-6 py-4 text-center text-gray-500">No modules found</td>
+              </tr>
+            @endforelse
             </tbody>
-            @endforeach
           </table>
         </div>
       </section>

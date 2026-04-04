@@ -33,7 +33,7 @@
         {{-- Actions --}}
         <div class="text-right mb-4">
           <a href="{{ route('quizzes.create') }}" class="bg-black text-white py-2 px-3 text-sm rounded-2xl m-1">Create Set</a>
-          <a href="{{ route('form') }}" class="bg-black text-white py-2 px-3 text-sm rounded-2xl m-1">Import Question</a>
+          <a href="{{ route('quiz.import.form') }}" class="bg-black text-white py-2 px-3 text-sm rounded-2xl m-1">Import Question</a>
         </div>
 
         {{-- Filters --}}
