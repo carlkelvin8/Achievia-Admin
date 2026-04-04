@@ -9,6 +9,8 @@
 .env
 .env.backup
 .env.production
+tests/playwright/.auth.json
+test-results/
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
