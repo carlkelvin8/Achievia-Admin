@@ -11,6 +11,8 @@
 .env.production
 tests/playwright/.auth.json
 test-results/
+.DS_Store
+Thumbs.db
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
