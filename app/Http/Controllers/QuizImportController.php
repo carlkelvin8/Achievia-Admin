@@ -31,19 +31,25 @@ class QuizImportController extends Controller
             $content = file_get_contents($path);
 
             // Detect and convert encoding to UTF-8
-            // Handles: UTF-8 with BOM, UTF-16 LE/BE, Windows-1252 (Excel default)
             if (substr($content, 0, 2) === "\xFF\xFE") {
-                // UTF-16 LE
+                // UTF-16 LE with BOM
                 $content = mb_convert_encoding(substr($content, 2), 'UTF-8', 'UTF-16LE');
             } elseif (substr($content, 0, 2) === "\xFE\xFF") {
-                // UTF-16 BE
+                // UTF-16 BE with BOM
                 $content = mb_convert_encoding(substr($content, 2), 'UTF-8', 'UTF-16BE');
             } else {
                 // Strip UTF-8 BOM if present
                 $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
-                // If not valid UTF-8, assume Windows-1252 (common Excel export)
+                // Only convert if clearly NOT UTF-8 (strict check)
+                // mb_check_encoding can give false negatives on valid UTF-8 with special chars,
+                // so we use iconv as a double-check before converting
                 if (!mb_check_encoding($content, 'UTF-8')) {
-                    $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+                    $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $content);
+                    // Only use converted version if iconv succeeded and result is valid UTF-8
+                    if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                        $content = $converted;
+                    }
+                    // Otherwise leave as-is and let MySQL handle it
                 }
             }
 
