@@ -27,9 +27,28 @@ class QuizImportController extends Controller
             $file = $request->file('csv');
             $path = $file->getRealPath();
 
-            // Read and strip BOM
+            // Read file content
             $content = file_get_contents($path);
-            $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+
+            // Detect and convert encoding to UTF-8
+            // Handles: UTF-8 with BOM, UTF-16 LE/BE, Windows-1252 (Excel default)
+            if (substr($content, 0, 2) === "\xFF\xFE") {
+                // UTF-16 LE
+                $content = mb_convert_encoding(substr($content, 2), 'UTF-8', 'UTF-16LE');
+            } elseif (substr($content, 0, 2) === "\xFE\xFF") {
+                // UTF-16 BE
+                $content = mb_convert_encoding(substr($content, 2), 'UTF-8', 'UTF-16BE');
+            } else {
+                // Strip UTF-8 BOM if present
+                $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+                // If not valid UTF-8, assume Windows-1252 (common Excel export)
+                if (!mb_check_encoding($content, 'UTF-8')) {
+                    $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+                }
+            }
+
+            // Normalize line endings
+            $content = str_replace(["\r\n", "\r"], "\n", $content);
 
             $lines = array_values(array_filter(array_map('trim', explode("\n", $content))));
 
